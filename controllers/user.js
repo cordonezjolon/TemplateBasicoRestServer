@@ -1,18 +1,25 @@
 const { response, request } = require('express');
+const Usuario = require('../models/usuario');
+const bcryptjs = require('bcryptjs');
 
 const usuariosGet = (req, res = response)=>{
     res.json({msg:'Hello World'});
 }
 
 
-const usuariosPost = (req = request, res = response)=>{
-    const { nombre, edad = 0, apellido } = req.query;
-    const body = req.body;
+const usuariosPost = async(req = request, res = response)=>{
+
+    const {nombre,correo,password,rol} = req.body;
+    const usuario = new Usuario({nombre,correo,password,rol});
+   
+    //hash password
+    const salt = bcryptjs.genSaltSync();
+    usuario.password =  bcryptjs.hashSync(usuario.password,salt);
+    
+    //guardar
+    await usuario.save();
     res.json({msg:'Hello World'
-            ,body
-            ,nombre
-            ,edad
-            ,apellido}
+            ,usuario}
     );
 }
 
