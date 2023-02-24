@@ -2,10 +2,28 @@ const { response, request } = require('express');
 const Usuario = require('../models/usuario');
 const bcryptjs = require('bcryptjs');
 
-const usuariosGet = (req, res = response)=>{
-    res.json({msg:'Hello World'});
-}
+const usuariosGet = async (req, res = response)=>{
 
+    const {limite = 5 , desde = 0 } = req.query;
+    const query ={estado:true};
+
+
+    const [total, usuarios] = await Promise.all([
+        Usuario.countDocuments(query),
+        Usuario.find(query)
+                            .skip(Number(desde))
+                            .limit(Number(limite))
+
+    ])
+
+
+    res.json({total,usuarios});
+}
+const usuariosGetById = async (req, res = response)=>{
+    const {id} = req.params;
+    const usuario = await Usuario.findById(id);
+    res.json(usuario);
+}
 
 const usuariosPost = async(req = request, res = response)=>{
 
@@ -18,24 +36,33 @@ const usuariosPost = async(req = request, res = response)=>{
     
     //guardar
     await usuario.save();
-    res.json({msg:'Hello World'
-            ,usuario}
-    );
+    res.json(usuario);
 }
 
 const usuariosPatch = (req, res = response)=>{
     res.json({msg:'Hello World'});
 }
 
-const usuariosDelete = (req, res = response)=>{
-    res.json({msg:'Hello World'});
+const usuariosDelete = async (req, res = response)=>{
+    const {id} = req.params;
+
+
+    const usuario = await Usuario.findByIdAndUpdate(id,{estado:false});
+    res.json(usuario);
+
+
 }
 
-const usuariosPut = (req, res = response)=>{
-    const id = req.params.id;
-    console.log(req);
-    res.json({msg:'Hola mundo'
-                ,id});
+const usuariosPut =  async(req, res = response)=>{
+    const { id } = req.params;
+    const {password, google, correo,...resto} = req.body;
+
+    if(password) {
+        const salt = bcryptjs.genSaltSync();
+        resto.password =  bcryptjs.hashSync(password,salt);
+    }
+    const usuario = await Usuario.findByIdAndUpdate(id, resto);
+    res.json(usuario);
 }
 
 module.exports = {
@@ -44,4 +71,5 @@ module.exports = {
     ,usuariosPatch
     ,usuariosDelete
     ,usuariosPut
+    ,usuariosGetById
 }
