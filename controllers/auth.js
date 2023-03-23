@@ -59,14 +59,41 @@ const googleSingIn = async(req, res = response) => {
     try {
         const {nombre,img,correo} = await googleVerify(id_token);
 
+        let usuario = await Usuario.findOne({correo});
+
+        if(!usuario){
+            //Crearlo por que no existe
+            const data = {
+                nombre,
+                correo,
+                password:':)',
+                img,
+                google:true
+            }
+            usuario = new Usuario(data);
+            await usuario.save();
+        }
+
+        //Validar si usuario en base de datos esta inactivo
+
+        if(!usuario.estado){
+            return res.status(401).json({
+               msg:'Hable con el administrador, usuario bloqueado.' 
+            })
+        }
+
+        //Generar token para autorizacion 
+        const token = await generarJWT(usuario.id);
+
         res.json({
-                msg: 'Todo bien!',
-                id_token
-        })
+            usuario,
+            token
+        });
+
     } catch (error) {
-        json.status(400).json({
+        res.status(400).json({
             ok:false
-            ,msg:'El token no se pudo verificar.'
+            ,msg:'El token no se pudo verificar. '  + error
         })
         
     }
